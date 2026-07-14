@@ -1,3 +1,19 @@
+# [1.3.0](https://github.com/CoCreate-app/CoCreate-cron-jobs/compare/v1.2.1...v1.3.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* remove unnecessary console logs in init function for cleaner output ([50dac43](https://github.com/CoCreate-app/CoCreate-cron-jobs/commit/50dac43f973b7b90144233522d8a950ec6ce5057))
+* removed post install ([101e9b3](https://github.com/CoCreate-app/CoCreate-cron-jobs/commit/101e9b379fba70b711b46bb4a046c892bdf21c2a))
+* semantic version handling. Reorganize .gitignore for improved clarity and structure ([f211fa3](https://github.com/CoCreate-app/CoCreate-cron-jobs/commit/f211fa30c0c6dc3f90576ad28e15856f5abc45bd))
+* update .gitignore to include package-lock.json and pnpm-lock.yaml ([4ca6545](https://github.com/CoCreate-app/CoCreate-cron-jobs/commit/4ca65451c8bd2f9d3c6562fc4908f54c69f3e1f5))
+* update module export to ES6 syntax in release.config.js ([96909f4](https://github.com/CoCreate-app/CoCreate-cron-jobs/commit/96909f4deff179f2cb02170816680a8248fcf96e))
+
+
+### Features
+
+* add cron-parser dependency and implement cron job scheduling logic ([b80a44d](https://github.com/CoCreate-app/CoCreate-cron-jobs/commit/b80a44d0dd2ec4b7f7d41e171b9babacb0a1e13a))
+
 ## [1.2.1](https://github.com/CoCreate-app/CoCreate-cron-jobs/compare/v1.2.0...v1.2.1) (2025-05-01)
 
 
