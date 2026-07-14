@@ -398,8 +398,6 @@ async function init() {
         process.on('crud-event', (event) => {
             handleCrudEvent(event);
         });
-
-        console.log(`[@cocreate/cron-jobs] Cron monitoring active on Worker Core ${server.workerId}`);
         
         // Initial boot poll
         pollForCronJobs();
