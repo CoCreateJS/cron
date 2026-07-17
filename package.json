@@ -37,7 +37,6 @@
   "type": "module",
   "main": "./src/index.js",
   "dependencies": {
-    "cron-parser": "^4.9.0",
-    "node-html-parser": "^6.1.13"
+    "cron-parser": "^4.9.0"
   }
 }
