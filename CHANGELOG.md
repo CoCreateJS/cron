@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/CoCreate-app/CoCreate-cron-jobs/compare/v1.4.0...v1.4.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* bump dependencies ([451a7a3](https://github.com/CoCreate-app/CoCreate-cron-jobs/commit/451a7a3c0d66927317089705a61f155541a58417))
+
 # [1.4.0](https://github.com/CoCreate-app/CoCreate-cron-jobs/compare/v1.3.0...v1.4.0) (2026-07-17)
 
 
