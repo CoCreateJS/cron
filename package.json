@@ -1,6 +1,6 @@
 {
   "name": "@cocreate/cron-jobs",
-  "version": "1.2.1",
+  "version": "1.4.0",
   "description": "A simple cron-jobs component in vanilla javascript. Easily configured using HTML5 data-attributes and/or JavaScript API.",
   "keywords": [
     "cron-jobs",
@@ -18,7 +18,8 @@
   "scripts": {
     "start": "npx webpack --config webpack.config.js",
     "build": "npx webpack --mode=production --config webpack.config.js",
-    "dev": "npx webpack --config webpack.config.js --watch"  },
+    "dev": "npx webpack --config webpack.config.js --watch"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CoCreate-app/CoCreate-cron-jobs.git"

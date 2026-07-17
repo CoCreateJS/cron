@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/CoCreate-app/CoCreate-cron-jobs/compare/v1.3.0...v1.4.0) (2026-07-17)
+
+
+### Features
+
+* update automated workflow and release configuration for improved semantic release handling ([25d37c4](https://github.com/CoCreate-app/CoCreate-cron-jobs/commit/25d37c4fd2d2fb3ed40de34556fe13db627baa3a))
+
 # [1.3.0](https://github.com/CoCreate-app/CoCreate-cron-jobs/compare/v1.2.1...v1.3.0) (2026-07-14)
 
 
