@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/CoCreate-app/CoCreate-cron-jobs/compare/v1.4.1...v1.4.2) (2026-07-18)
+
+
+### Bug Fixes
+
+* remove unused dependency 'node-html-parser' from package.json ([c7de8bb](https://github.com/CoCreate-app/CoCreate-cron-jobs/commit/c7de8bb0e5f31410c985015d3855cf71f7e95ef2))
+
 ## [1.4.1](https://github.com/CoCreate-app/CoCreate-cron-jobs/compare/v1.4.0...v1.4.1) (2026-07-17)
 
 
