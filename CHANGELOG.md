@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/CoCreate-app/CoCreate-cron-jobs/compare/v1.4.2...v1.4.3) (2026-07-19)
+
+
+### Bug Fixes
+
+* set default branch to main ([9565fda](https://github.com/CoCreate-app/CoCreate-cron-jobs/commit/9565fdae70fa3888c1af949f06b6f001a8f48afc))
+
 ## [1.4.2](https://github.com/CoCreate-app/CoCreate-cron-jobs/compare/v1.4.1...v1.4.2) (2026-07-18)
 
 
