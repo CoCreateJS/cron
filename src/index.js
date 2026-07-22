@@ -270,7 +270,7 @@ async function handleCrudEvent(data) {
  */
 async function pollForCronJobs() {
     if (!crud) return;
-    console.log(`[@cocreate/cron-jobs] [Worker ${server?.workerId}] Polling for active organizations' cron jobs...`);
+    console.log(`[@cocreate/cron-jobs] [WORKER ${server?.workerId}] Polling for active organizations' cron jobs...`);
 
     const now = new Date();
     const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
