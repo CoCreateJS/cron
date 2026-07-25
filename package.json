@@ -35,8 +35,5 @@
     "url": "https://github.com/sponsors/CoCreate-app"
   },
   "type": "module",
-  "main": "./src/index.js",
-  "dependencies": {
-    "cron-parser": "^4.9.0"
-  }
+  "main": "./src/index.js"
 }

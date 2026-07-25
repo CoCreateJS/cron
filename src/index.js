@@ -21,87 +21,299 @@
 // you must obtain a commercial license from CoCreate LLC.
 // For details, visit <https://cocreate.app/licenses/> or contact us at sales@cocreate.app.
 
-import cronParser from 'cron-parser';
 import server from '@cocreate/server';
 
-// ==========================================
-// Module-Level Sandbox State (ESM Singleton)
-// ==========================================
 let crud = null;
 let wsManager = null;
 const scheduledJobs = {};
 
 /**
- * Parses the schedule object and calculates the next execution time.
- * Takes into account cronExpression, startTime, skipDates, time, daysOfWeek, daysOfMonth, months, endTime, etc.
- * @param {Object} schedule - The schedule object containing cronExpression, startTime, etc.
- * @returns {string|null} nextExecutionTime - Calculated execution timestamp in ISO format, or null if endTime has passed.
+ * Safe helper to retrieve localized or UTC date part names natively.
+ */
+function getFormattedDatePart(date, type, timezone = 'UTC') {
+    return date.toLocaleString('en-US', { [type]: 'long', timeZone: timezone });
+}
+
+/**
+ * Calculates the last day of the month for any given UTC year/month.
+ */
+function getLastDayOfMonthUTC(year, monthIndex) {
+    // Setting day to 0 of monthIndex + 1 yields the last day of monthIndex
+    return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+}
+
+/**
+ * Custom 5-Part Cron Field Parser (Zero external dependencies).
+ * Handles ranges (1-5), lists (1,2,3), wildcards (*), step values (* /15, 1-30/5), and string aliases.
+ */
+function parseCronField(field, min, max, nameMap = {}) {
+    field = field.trim().toUpperCase();
+
+    // Replace string aliases if present (e.g., JAN-DEC or SUN-SAT)
+    for (const [name, val] of Object.entries(nameMap)) {
+        field = field.replace(new RegExp(name, 'g'), val);
+    }
+
+    const allowed = new Set();
+    const parts = field.split(',');
+
+    for (const part of parts) {
+        if (part.includes('/')) {
+            const [rangeStr, stepStr] = part.split('/');
+            const step = parseInt(stepStr, 10) || 1;
+            let start = min;
+            let end = max;
+
+            if (rangeStr !== '*') {
+                if (rangeStr.includes('-')) {
+                    const [s, e] = rangeStr.split('-').map(Number);
+                    start = s;
+                    end = e;
+                } else {
+                    start = parseInt(rangeStr, 10);
+                }
+            }
+            for (let i = start; i <= end; i += step) {
+                if (i >= min && i <= max) allowed.add(i);
+            }
+        } else if (part.includes('-')) {
+            const [start, end] = part.split('-').map(Number);
+            for (let i = start; i <= end; i++) {
+                if (i >= min && i <= max) allowed.add(i);
+            }
+        } else if (part === '*') {
+            for (let i = min; i <= max; i++) allowed.add(i);
+        } else {
+            const val = parseInt(part, 10);
+            if (!isNaN(val) && val >= min && val <= max) {
+                allowed.add(val);
+            }
+        }
+    }
+    return allowed;
+}
+
+/**
+ * Tokenizes standard 5-part cron expressions into match sets.
+ */
+function parseCronExpression(expression) {
+    if (!expression || typeof expression !== 'string') return null;
+    const tokens = expression.trim().split(/\s+/);
+    if (tokens.length !== 5) return null;
+
+    const monthNames = { JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6, JUL: 7, AUG: 8, SEP: 9, OCT: 10, NOV: 11, DEC: 12 };
+    const dayNames = { SUN: 0, MON: 1, TUE: 2, WED: 3, THU: 4, FRI: 5, SAT: 6 };
+
+    return {
+        minutes: parseCronField(tokens[0], 0, 59),
+        hours: parseCronField(tokens[1], 0, 23),
+        daysOfMonth: parseCronField(tokens[2], 1, 31),
+        months: parseCronField(tokens[3], 1, 12, monthNames),
+        daysOfWeek: parseCronField(tokens[4], 0, 6, dayNames)
+    };
+}
+
+/**
+ * Checks if a specific UTC date instance matches a parsed 5-part cron object.
+ */
+function matchesCron(parsedCron, date) {
+    const month = date.getUTCMonth() + 1; // 1-12
+    const dayOfMonth = date.getUTCDate(); // 1-31
+    const dayOfWeek = date.getUTCDay(); // 0-6
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+
+    if (!parsedCron.minutes.has(minutes)) return false;
+    if (!parsedCron.hours.has(hours)) return false;
+    if (!parsedCron.months.has(month)) return false;
+
+    const domHasAll = parsedCron.daysOfMonth.size === 31;
+    const dowHasAll = parsedCron.daysOfWeek.size === 7;
+
+    // Standard Cron rule: If both DOM and DOW are specified (neither is *), either matching triggers execution (OR logic).
+    if (!domHasAll && !dowHasAll) {
+        if (!parsedCron.daysOfMonth.has(dayOfMonth) && !parsedCron.daysOfWeek.has(dayOfWeek)) {
+            return false;
+        }
+    } else {
+        if (!parsedCron.daysOfMonth.has(dayOfMonth)) return false;
+        if (!parsedCron.daysOfWeek.has(dayOfWeek)) return false;
+    }
+
+    return true;
+}
+
+/**
+ * Calculates the next execution time for standard 5-part cron strings natively.
+ */
+function getNextCronExecution(cronExpression, startFromDate, skipDates = []) {
+    const parsed = parseCronExpression(cronExpression);
+    if (!parsed) return null;
+
+    let current = new Date(startFromDate.getTime());
+    current.setUTCSeconds(0, 0);
+    current.setUTCMinutes(current.getUTCMinutes() + 1); // Step forward to next minute
+
+    const maxSearchMinutes = 525600; // 1-year upper bound protection
+    let counter = 0;
+
+    while (counter < maxSearchMinutes) {
+        counter++;
+        const isoDateStr = current.toISOString().split('T')[0];
+
+        // Evaluate skipDates
+        if (skipDates && skipDates.includes(isoDateStr)) {
+            current.setUTCDate(current.getUTCDate() + 1);
+            current.setUTCHours(0, 0, 0, 0);
+            continue;
+        }
+
+        if (matchesCron(parsed, current)) {
+            return current.toISOString();
+        }
+
+        // Fast-forward month mismatch
+        const month = current.getUTCMonth() + 1;
+        if (!parsed.months.has(month)) {
+            current.setUTCMonth(current.getUTCMonth() + 1);
+            current.setUTCDate(1);
+            current.setUTCHours(0, 0, 0, 0);
+            continue;
+        }
+
+        // Fast-forward day mismatch if DOW is wildcard
+        const dom = current.getUTCDate();
+        if (parsed.daysOfWeek.size === 7 && !parsed.daysOfMonth.has(dom)) {
+            current.setUTCDate(current.getUTCDate() + 1);
+            current.setUTCHours(0, 0, 0, 0);
+            continue;
+        }
+
+        // Fast-forward hour mismatch
+        const hour = current.getUTCHours();
+        if (!parsed.hours.has(hour)) {
+            current.setUTCHours(current.getUTCHours() + 1);
+            current.setUTCMinutes(0, 0, 0);
+            continue;
+        }
+
+        current.setUTCMinutes(current.getUTCMinutes() + 1);
+    }
+
+    return null;
+}
+
+/**
+ * Parses the schedule object and calculates the next execution time natively in UTC.
+ * Supports cronExpression, startTime, skipDates, time, daysOfWeek, daysOfMonth, endOfMonth, months, endTime, etc.
+ * @param {Object} schedule - The schedule object containing custom fields or cronExpression.
+ * @returns {string|null} nextExecutionTime - Calculated ISO timestamp in UTC, or null if endTime has passed.
  */
 function getNextExecutionTime(schedule) {
-    const now = new Date();
-    let currentDateTime = now;
+    if (!schedule) return null;
 
-    // Use startTime if it's greater than now, otherwise use now
+    const now = new Date();
+    let currentDateTime = new Date();
+
+    // 1. Establish UTC start baseline
     if (schedule.startTime && new Date(schedule.startTime) > now) {
         currentDateTime = new Date(schedule.startTime);
     }
 
-    // Apply skipDates: Skip the date if it matches any in skipDates
-    if (schedule.skipDates && schedule.skipDates.includes(currentDateTime.toISOString().split('T')[0])) {
-        currentDateTime = new Date(currentDateTime.getTime() + 24 * 60 * 60 * 1000);  // Skip to the next day
-    }
+    const timezone = schedule.timezone || 'UTC';
 
-    // Apply daysOfWeek: If the current day is not in the allowed days, skip to the next valid day
-    if (schedule.daysOfWeek) {
-        const dayOfWeek = currentDateTime.toLocaleString('en-US', { weekday: 'long', timeZone: schedule.timezone || 'UTC' });
-
-        while (!schedule.daysOfWeek.includes(dayOfWeek)) {
-            currentDateTime.setDate(currentDateTime.getDate() + 1);  // Move to the next day
-        }
-    }
-
-    // Apply daysOfMonth: Ensure the next execution is on a valid day of the month
-    if (schedule.daysOfMonth) {
-        while (!schedule.daysOfMonth.includes(currentDateTime.getDate())) {
-            currentDateTime.setDate(currentDateTime.getDate() + 1);  // Move to the next day
-        }
-    }
-
-    // Apply months: Ensure the next execution falls within one of the allowed months
-    if (schedule.months) {
-        const monthName = currentDateTime.toLocaleString('en-US', { month: 'long', timeZone: schedule.timezone || 'UTC' });
-
-        while (!schedule.months.includes(monthName)) {
-            currentDateTime.setMonth(currentDateTime.getMonth() + 1);  // Move to the next month
-        }
-    }
-
-    // Apply time: Set the execution time of day if specified
-    if (schedule.time) {
-        const [hours, minutes, seconds] = schedule.time.split(':');
-        currentDateTime.setHours(hours, minutes, seconds);
-    }
-
-    // Apply endTime: Ensure the next execution time does not exceed the endTime
-    if (schedule.endTime && new Date(currentDateTime) > new Date(schedule.endTime)) {
-        return null;  // No further executions after endTime
-    }
-
-    // Now run the cronParser to handle cronExpression (if present) or fallback to currentDateTime
+    // 2. If standard 5-part cron expression exists, use native parser
     if (schedule.cronExpression) {
-        try {
-            const interval = cronParser.parseExpression(schedule.cronExpression, {
-                currentDate: currentDateTime,
-                tz: schedule.timezone || 'UTC'
-            });
-            return interval.next().toISOString();
-        } catch (err) {
-            console.error('[@cocreate/cron-jobs] Cron parsing failed:', err);
+        const nextCronRun = getNextCronExecution(schedule.cronExpression, currentDateTime, schedule.skipDates);
+        if (nextCronRun && schedule.endTime && new Date(nextCronRun) > new Date(schedule.endTime)) {
             return null;
         }
+        return nextCronRun;
     }
 
-    return currentDateTime.toISOString();
+    // 3. Object-based custom schedule evaluation with safety bounds
+    let safetyCounter = 0;
+    const maxSafetyIterations = 1000;
+
+    // Apply time of day if set (formatted HH:MM or HH:MM:SS)
+    if (schedule.time) {
+        const [hours, minutes, seconds] = schedule.time.split(':').map(Number);
+        currentDateTime.setUTCHours(hours || 0, minutes || 0, seconds || 0, 0);
+
+        if (currentDateTime < now) {
+            currentDateTime.setUTCDate(currentDateTime.getUTCDate() + 1);
+        }
+    }
+
+    while (safetyCounter < maxSafetyIterations) {
+        safetyCounter++;
+
+        const isoDateStr = currentDateTime.toISOString().split('T')[0];
+
+        // Check skipDates
+        if (schedule.skipDates && schedule.skipDates.includes(isoDateStr)) {
+            currentDateTime.setUTCDate(currentDateTime.getUTCDate() + 1);
+            continue;
+        }
+
+        // Check months
+        if (schedule.months && schedule.months.length > 0) {
+            const currentMonth = getFormattedDatePart(currentDateTime, 'month', timezone);
+            if (!schedule.months.includes(currentMonth)) {
+                currentDateTime.setUTCMonth(currentDateTime.getUTCMonth() + 1);
+                currentDateTime.setUTCDate(1);
+                continue;
+            }
+        }
+
+        // Check daysOfMonth and end-of-month / "L" keyword
+        if (schedule.daysOfMonth && schedule.daysOfMonth.length > 0) {
+            const currentDom = currentDateTime.getUTCDate();
+            const year = currentDateTime.getUTCFullYear();
+            const monthIdx = currentDateTime.getUTCMonth();
+            const lastDay = getLastDayOfMonthUTC(year, monthIdx);
+
+            const isAllowedDom = schedule.daysOfMonth.some((day) => {
+                if (day === 'L' || day === 'end-of-month') return currentDom === lastDay;
+                return Number(day) === currentDom;
+            });
+
+            if (!isAllowedDom) {
+                currentDateTime.setUTCDate(currentDateTime.getUTCDate() + 1);
+                continue;
+            }
+        } else if (schedule.endOfMonth) {
+            // Direct object property for end-of-month scheduling
+            const currentDom = currentDateTime.getUTCDate();
+            const year = currentDateTime.getUTCFullYear();
+            const monthIdx = currentDateTime.getUTCMonth();
+            const lastDay = getLastDayOfMonthUTC(year, monthIdx);
+
+            if (currentDom !== lastDay) {
+                currentDateTime.setUTCDate(currentDateTime.getUTCDate() + 1);
+                continue;
+            }
+        }
+
+        // Check daysOfWeek
+        if (schedule.daysOfWeek && schedule.daysOfWeek.length > 0) {
+            const currentDayOfWeek = getFormattedDatePart(currentDateTime, 'weekday', timezone);
+            if (!schedule.daysOfWeek.includes(currentDayOfWeek)) {
+                currentDateTime.setUTCDate(currentDateTime.getUTCDate() + 1);
+                continue;
+            }
+        }
+
+        // Verify Expiration / EndTime
+        if (schedule.endTime && currentDateTime > new Date(schedule.endTime)) {
+            return null;
+        }
+
+        return currentDateTime.toISOString();
+    }
+
+    console.warn('[@cocreate/cron-jobs] Max safety iteration reached for schedule:', schedule);
+    return null;
 }
 
 /**
@@ -112,6 +324,7 @@ async function updateCronJob(object) {
     if (!crud) return;
     try {
         const cronJobs = Array.isArray(object) ? object : [object];
+        if (cronJobs.length === 0) return;
 
         for (const job of cronJobs) {
             await crud.send({
@@ -121,10 +334,10 @@ async function updateCronJob(object) {
                 upsert: true,
                 organization_id: job.organization_id
             });
-            console.log(`[@cocreate/cron-jobs] Cron job for org ${job.organization_id} updated.`);
+            console.log(`[@cocreate/cron-jobs] Cron job ${job._id} for org ${job.organization_id} updated.`);
         }
 
-        if (cronJobs.length > 0 && cronJobs[0].organization_id) {
+        if (cronJobs[0].organization_id) {
             const firstJob = cronJobs[0];
             await crud.send({
                 method: 'object.update',
@@ -143,11 +356,35 @@ async function updateCronJob(object) {
 }
 
 /**
+ * Triggers the defined job action or payload webhook.
+ */
+async function triggerJobAction(job) {
+    console.log(`[@cocreate/cron-jobs] Triggering pipeline action for job ${job._id}`);
+
+    try {
+        if (server?.lazyloader?.webhook) {
+            await server.lazyloader.webhook(job);
+        } else if (wsManager && job.action) {
+            await wsManager.broadcast({
+                target: job.action,
+                data: job
+            });
+        }
+    } catch (err) {
+        console.error(`[@cocreate/cron-jobs] Action execution failed for job ${job._id}:`, err);
+    }
+}
+
+/**
  * Executes the scheduled cron job.
  * @param {Object} object - The cron-job object containing job details, schedule parameters, etc.
  */
 async function executeCronJob(object) {
-    console.log(`[@cocreate/cron-jobs] Executing cron job for org ${object.organization_id}`);
+    console.log(`[@cocreate/cron-jobs] Executing cron job ${object._id} for org ${object.organization_id}`);
+
+    if (scheduledJobs[object._id]) {
+        delete scheduledJobs[object._id];
+    }
 
     try {
         if (!object.job && crud) {
@@ -158,20 +395,19 @@ async function executeCronJob(object) {
                 organization_id: object.organization_id
             });
             if (data.object && data.object[0]) {
-                object = data.object[0];
+                object = { ...data.object[0], ...object };
             }
-            console.log('[@cocreate/cron-jobs] Fetched cron job data:', object);
         }
 
-        // Target Action Pipeline execution placeholder:
-        // TODO: execute cron using lazyloader.webhook() or server-native lazyloader routing
-        
+        // Execute target payload / AST action
+        await triggerJobAction(object);
+
+        // Recalculate next execution window in UTC
         object.nextExecutionTime = getNextExecutionTime(object.schedule);
         if (!object.nextExecutionTime) {
             object.active = false;
             object.status = 'completed';
         } else {
-            // Re-queue and release the lock for the next interval run
             object.status = 'scheduled';
             object.serverId = null;
             object.workerId = null;
@@ -184,10 +420,17 @@ async function executeCronJob(object) {
 }
 
 /**
- * Schedules a cron job to be executed at a specific datetime.
+ * Schedules a cron job in-memory to be executed at a specific UTC datetime.
  * @param {Object} object - The cron-job configuration footprint.
  */
 function scheduleCronJob(object) {
+    if (!object || !object._id || !object.nextExecutionTime) return;
+
+    if (scheduledJobs[object._id]) {
+        clearTimeout(scheduledJobs[object._id]);
+        delete scheduledJobs[object._id];
+    }
+
     const delay = new Date(object.nextExecutionTime) - new Date();
 
     if (delay <= 0) {
@@ -195,17 +438,9 @@ function scheduleCronJob(object) {
         return;
     }
 
-    console.log(`[@cocreate/cron-jobs] Scheduling cron job for org ${object.organization_id} in ${delay / 1000} seconds`);
+    console.log(`[@cocreate/cron-jobs] Scheduling job ${object._id} for org ${object.organization_id} in ${(delay / 1000).toFixed(1)} seconds`);
 
-    const scheduledObj = {
-        _id: object._id,
-        nextExecutionTime: object.nextExecutionTime,
-        status: object.status,
-        clusterId: 'default-cluster', 
-        serverId: server?.instanceId || server?.serverId || 'default-server',
-        workerId: server?.workerId !== undefined ? server.workerId : 'standalone',
-        organization_id: object.organization_id
-    };
+    const scheduledObj = { ...object };
 
     scheduledJobs[object._id] = setTimeout(() => {
         executeCronJob(scheduledObj);
@@ -213,71 +448,71 @@ function scheduleCronJob(object) {
 }
 
 /**
- * Handles CRUD events to schedule cron jobs dynamically.
+ * Handles CRUD events to schedule cron jobs dynamically without array mutation bugs.
  * @param {Object} data - The data object emitted from CRUD operations.
  */
 async function handleCrudEvent(data) {
-    if (data.array !== 'cron-job') {
-        return;  // Ignore non-cron-job events
+    if (!data || data.array !== 'cron-job' || !Array.isArray(data.object)) {
+        return;
     }
 
-    // Iterate over the jobs in the data.object array
-    for (let i = 0; i < data.object.length; i++) {
-        if (data.method === 'object.delete' || data.object[i].active === false) {
-            const timeoutId = scheduledJobs[data.object[i]._id];
+    const updatedJobs = [];
 
-            if (timeoutId) {
-                clearTimeout(timeoutId); // Cancel the timeout if it exists
-                delete scheduledJobs[data.object[i]._id]; // Remove the reference
+    for (const job of data.object) {
+        if (!job || !job._id) continue;
+
+        if (data.method === 'object.delete' || job.active === false) {
+            if (scheduledJobs[job._id]) {
+                clearTimeout(scheduledJobs[job._id]);
+                delete scheduledJobs[job._id];
             }
 
-            data.object.splice(i, 1);
-            i--;  // Adjust the index after removal
+            job.status = data.method === 'object.delete' ? 'deleted' : 'inactive';
+            updatedJobs.push(job);
             continue;
         }
 
-        const nextExecutionTime = getNextExecutionTime(data.object[i].schedule);
+        const nextExecutionTime = getNextExecutionTime(job.schedule);
 
         if (nextExecutionTime) {
-            // If already scheduled for the exact same block, skip duplicate scheduling
-            if (scheduledJobs[data.object[i]._id]) {
-                continue;
-            }
-
             const timeUntilExecution = new Date(nextExecutionTime) - new Date();
-            data.object[i].nextExecutionTime = nextExecutionTime;
+            job.nextExecutionTime = nextExecutionTime;
 
-            // If the next execution is within the next 5 minutes, schedule the job
-            if (timeUntilExecution <= 5 * 60 * 1000 && timeUntilExecution > 0) {
-                // Claim the job locally and coordinate across nodes/cores
-                data.object[i].status = 'assigned';
-                data.object[i].serverId = server?.instanceId || server?.serverId || 'default-server';
-                data.object[i].workerId = server?.workerId !== undefined ? server.workerId : 'standalone';
-                scheduleCronJob(data.object[i]);
+            if (timeUntilExecution <= 5 * 60 * 1000 && timeUntilExecution >= 0) {
+                if (!scheduledJobs[job._id]) {
+                    job.status = 'assigned';
+                    job.serverId = server?.instanceId || server?.serverId || 'default-server';
+                    job.workerId = server?.workerId !== undefined ? server.workerId : 'standalone';
+                    scheduleCronJob(job);
+                }
+            } else {
+                job.status = 'scheduled';
             }
+            updatedJobs.push(job);
         } else {
-            data.object.splice(i, 1);
-            i--;  // Adjust the index after removal
+            job.active = false;
+            job.status = 'completed';
+            updatedJobs.push(job);
         }
     }
 
-    await updateCronJob(data.object);
+    if (updatedJobs.length > 0) {
+        await updateCronJob(updatedJobs);
+    }
 }
 
 /**
  * Polls the platform DB for cron jobs that are scheduled or potentially failed.
- * Any worker process hosting active sockets/procedures for an organization can safely execute this.
  */
 async function pollForCronJobs() {
     if (!crud) return;
-    console.log(`[@cocreate/cron-jobs] [WORKER ${server?.workerId}] Polling for active organizations' cron jobs...`);
+    console.log(`[@cocreate/cron-jobs] [WORKER ${server?.workerId ?? 'standalone'}] Polling for active organizations' cron jobs...`);
 
     const now = new Date();
     const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
-    const oneMinuteAgo = new Date(now.getTime() - 1 * 60 * 1000);  // 1 minute past due jobs
+    const oneMinuteAgo = new Date(now.getTime() - 1 * 60 * 1000);
 
     try {
-        // Query organizations.
         const data = await crud.send({
             method: 'object.read',
             array: 'organizations',
@@ -286,16 +521,16 @@ async function pollForCronJobs() {
                     $or: [
                         {
                             $and: [
-                                { 'cron-jobs.nextExecutionTime': { $elemMatch: { $lte: fiveMinutesFromNow, $gte: now } } }, // Match jobs in array within 5 minutes
-                                { 'cron-jobs.status': { $elemMatch: { $ne: 'assigned' } } },   // Not already claimed/assigned
-                                { 'cron-jobs.active': { $elemMatch: { $ne: false } } }   // Is active
+                                { 'cron-jobs.nextExecutionTime': { $elemMatch: { $lte: fiveMinutesFromNow, $gte: now } } },
+                                { 'cron-jobs.status': { $elemMatch: { $ne: 'assigned' } } },
+                                { 'cron-jobs.active': { $elemMatch: { $ne: false } } }
                             ]
                         },
                         {
                             $and: [
-                                { 'cron-jobs.nextExecutionTime': { $elemMatch: { $lt: oneMinuteAgo } } },   // Past due by 1 minute (possible crash recovery)
-                                { 'cron-jobs.status': { $elemMatch: { $eq: 'assigned' } } },    // Marked assigned but execution failed to clear/update it
-                                { 'cron-jobs.active': { $elemMatch: { $ne: false } } }   // Is active                           
+                                { 'cron-jobs.nextExecutionTime': { $elemMatch: { $lt: oneMinuteAgo } } },
+                                { 'cron-jobs.status': { $elemMatch: { $eq: 'assigned' } } },
+                                { 'cron-jobs.active': { $elemMatch: { $ne: false } } }
                             ]
                         }
                     ]
@@ -306,27 +541,29 @@ async function pollForCronJobs() {
 
         if (!data || !data.object) return;
 
-        for (let i = 0; i < data.object.length; i++) {
-            const cronJobs = data.object[i].cronJobs;
-            if (!cronJobs) continue;
+        for (const org of data.object) {
+            const cronJobs = org.cronJobs;
+            if (!cronJobs || !Array.isArray(cronJobs)) continue;
 
-            const organizationId = data.object[i].organization_id;
+            const organizationId = org.organization_id || org._id;
+            const jobsToUpdate = [];
 
-            // Check each cron job in the organization's `cron-jobs` array
-            for (let j = 0; j < cronJobs.length; j++) {
-                if (scheduledJobs[cronJobs[j]._id]) continue;
+            for (const job of cronJobs) {
+                if (!job._id || scheduledJobs[job._id]) continue;
 
-                // Set assignment properties to claim this job cluster-wide
-                cronJobs[j].status = 'assigned';
-                cronJobs[j].clusterId = 'default-cluster';
-                cronJobs[j].serverId = server?.instanceId || server?.serverId || 'default-server';
-                cronJobs[j].workerId = server?.workerId !== undefined ? server.workerId : 'standalone';
-                cronJobs[j].organization_id = organizationId;
+                job.status = 'assigned';
+                job.clusterId = 'default-cluster';
+                job.serverId = server?.instanceId || server?.serverId || 'default-server';
+                job.workerId = server?.workerId !== undefined ? server.workerId : 'standalone';
+                job.organization_id = organizationId;
 
-                scheduleCronJob(cronJobs[j]);
+                scheduleCronJob(job);
+                jobsToUpdate.push(job);
             }
 
-            await updateCronJob(cronJobs);
+            if (jobsToUpdate.length > 0) {
+                await updateCronJob(jobsToUpdate);
+            }
         }
     } catch (error) {
         console.error('[@cocreate/cron-jobs] Error polling for cron jobs:', error);
@@ -335,8 +572,6 @@ async function pollForCronJobs() {
 
 /**
  * Adds a cron job reference to the platform database.
- * @param {string} organization_id - The organization ID.
- * @param {string} datetime - The datetime of the cron job to add to the platform DB.
  */
 async function addToPlatformDB(organization_id, datetime) {
     if (!crud) return;
@@ -357,7 +592,6 @@ async function addToPlatformDB(organization_id, datetime) {
 
 /**
  * Finds and schedules the next cron job for the organization after one is executed.
- * @param {string} organization_id - The organization ID.
  */
 async function findNextCronJob(organization_id) {
     if (!crud) return;
@@ -386,34 +620,27 @@ async function findNextCronJob(organization_id) {
 
 /**
  * Self-Activating Auto-Initialization Loop.
- * Runs on static module import, polling background state to detect when the 
- * parent server core has fully executed its async initialization blocks.
  */
 async function init() {
     if (server && server.isInitialized && server.crud && server.wsManager) {
         crud = server.crud;
         wsManager = server.wsManager;
 
-        // Handle incoming realtime CRUD operations to dynamically reschedule active jobs
         process.on('crud-event', (event) => {
             handleCrudEvent(event);
         });
-        
-        // Initial boot poll
+
         pollForCronJobs();
 
-        // Setup the 5-minute interval cycle
         setInterval(() => {
             pollForCronJobs();
         }, 5 * 60 * 1000);
-        
+
     } else {
-        // If the server core isn't fully booted/initialized yet, retry in 500ms
         setTimeout(init, 500);
     }
 }
 
-// Start auto-activation monitoring sequence instantly upon import evaluation
 init();
 
 export default {
