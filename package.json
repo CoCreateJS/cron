@@ -37,6 +37,6 @@
   "type": "module",
   "main": "./src/index.js",
   "dependencies": {
-    "@cocreate/server": "^1.10.0"
+    "@cocreate/server": "^1.11.0"
   }
 }
