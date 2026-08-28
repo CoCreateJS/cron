@@ -481,7 +481,7 @@ async function handleCrudEvent(data) {
             if (timeUntilExecution <= 5 * 60 * 1000 && timeUntilExecution >= 0) {
                 if (!scheduledJobs[job._id]) {
                     job.status = 'assigned';
-                    job.serverId = server?.instanceId || server?.serverId || 'default-server';
+                    job.serverId = server?.vmId || server?.serverId || 'default-server';
                     job.workerId = server?.workerId !== undefined ? server.workerId : 'standalone';
                     scheduleCronJob(job);
                 }
@@ -553,7 +553,7 @@ async function pollForCronJobs() {
 
                 job.status = 'assigned';
                 job.clusterId = 'default-cluster';
-                job.serverId = server?.instanceId || server?.serverId || 'default-server';
+                job.serverId = server?.vmId || server?.serverId || 'default-server';
                 job.workerId = server?.workerId !== undefined ? server.workerId : 'standalone';
                 job.organization_id = organizationId;
 
