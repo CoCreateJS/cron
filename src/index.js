@@ -601,7 +601,7 @@ async function findNextCronJob(organization_id) {
         const nextJob = await crud.send({
             method: 'object.read',
             array: 'cron-job',
-            $filter: {
+            filter: {
                 query: { organization_id },
                 sort: [{ key: 'datetime', direction: 'asc' }],
                 limit: 1
