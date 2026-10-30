@@ -15,6 +15,28 @@
   "publishConfig": {
     "access": "public"
   },
+  "cocreate": {
+    "environment": [
+      "server"
+    ],
+    "interface": {
+      "schemaVersion": 1,
+      "summary": "A simple cron-jobs component in vanilla javascript. Easily configured using HTML5 data-attributes and/or JavaScript API.",
+      "source": "src/index.js",
+      "api": {
+        "exports": [
+          "addToPlatformDB",
+          "executeCronJob",
+          "findNextCronJob",
+          "getNextExecutionTime",
+          "handleCrudEvent",
+          "init",
+          "pollForCronJobs",
+          "scheduleCronJob"
+        ]
+      }
+    }
+  },
   "scripts": {
     "start": "webpack --config webpack.config.js",
     "build": "webpack --mode=production --config webpack.config.js",
