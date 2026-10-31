@@ -53,9 +53,9 @@
   "author": "CoCreate LLC",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/CoCreate-app/CoCreate-server-cron/issues"
+    "url": "https://github.com/CoCreateJS/CoCreate-server-cron/issues"
   },
-  "homepage": "https://cocreate.app/docs/server-cron",
+  "homepage": "https://CoCreateJS.com/docs/server-cron",
   "funding": {
     "type": "GitHub Sponsors ❤",
     "url": "https://github.com/sponsors/CoCreate-app"

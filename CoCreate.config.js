@@ -12,8 +12,8 @@ module.exports = {
                 "pathname": "/docs/server-cron/index.html",
                 "src": "{{./docs/index.html}}",
                 "host": [
-                    "cocreate.app",
-                    "general.cocreate.app"
+                    "CoCreateJS.com",
+                    "general.CoCreateJS.com"
                 ],
                 "directory": "server-cron",
                 "content-type": "text/html",

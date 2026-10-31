@@ -353,7 +353,7 @@ Organization updates also synchronize job summaries into the parent `organizatio
 
 Release notes, performance improvements, scheduling enhancements, and compatibility updates are available on the GitHub Releases page:
 
-https://github.com/CoCreate-app/CoCreate-server-cron/releases
+https://github.com/CoCreateJS/CoCreate-server-cron/releases
 
 ---
 
@@ -375,9 +375,9 @@ We welcome bug reports, feature requests, documentation improvements, and pull r
 
 Please review the contributing guide before submitting changes:
 
-- **Contributing Guide:** https://github.com/CoCreate-app/CoCreate-server-cron/blob/master/CONTRIBUTING.md
-- **Issue Tracker:** https://github.com/CoCreate-app/CoCreate-server-cron/issues
-- **Discussions:** https://github.com/CoCreate-app/CoCreate-server-cron/discussions
+- **Contributing Guide:** https://github.com/CoCreateJS/CoCreate-server-cron/blob/master/CONTRIBUTING.md
+- **Issue Tracker:** https://github.com/CoCreateJS/CoCreate-server-cron/issues
+- **Discussions:** https://github.com/CoCreateJS/CoCreate-server-cron/discussions
 
 ---
 
