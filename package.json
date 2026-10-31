@@ -1,8 +1,12 @@
 {
-  "name": "@cocreate/cron-jobs",
+  "name": "@cocreate/server-cron",
   "version": "1.10.0",
-  "description": "A simple cron-jobs component in vanilla javascript. Easily configured using HTML5 data-attributes and/or JavaScript API.",
+  "description": "A distributed server-side cron scheduler and orchestrator for CoCreate Server.",
   "keywords": [
+    "server-cron",
+    "cron-scheduler",
+    "scheduler",
+    "orchestrator",
     "cron-jobs",
     "low-code",
     "realtime",
@@ -21,7 +25,7 @@
     ],
     "interface": {
       "schemaVersion": 1,
-      "summary": "A simple cron-jobs component in vanilla javascript. Easily configured using HTML5 data-attributes and/or JavaScript API.",
+      "summary": "A distributed server-side cron scheduler and orchestrator for CoCreate Server.",
       "source": "src/index.js",
       "api": {
         "exports": [
@@ -44,14 +48,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cocreatejs/CoCreate-cron-jobs.git"
+    "url": "git+https://github.com/cocreatejs/CoCreate-server-cron.git"
   },
   "author": "CoCreate LLC",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/CoCreate-app/CoCreate-cron-jobs/issues"
+    "url": "https://github.com/CoCreate-app/CoCreate-server-cron/issues"
   },
-  "homepage": "https://cocreate.app/docs/cron-jobs",
+  "homepage": "https://cocreate.app/docs/server-cron",
   "funding": {
     "type": "GitHub Sponsors ❤",
     "url": "https://github.com/sponsors/CoCreate-app"

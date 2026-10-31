@@ -8,14 +8,14 @@ module.exports = {
             "object": {
                 "_id": "60145dc49f64ba1680b86693",
                 "name": "index.html",
-                "path": "/docs/cron-jobs",
-                "pathname": "/docs/cron-jobs/index.html",
+                "path": "/docs/server-cron",
+                "pathname": "/docs/server-cron/index.html",
                 "src": "{{./docs/index.html}}",
                 "host": [
                     "cocreate.app",
                     "general.cocreate.app"
                 ],
-                "directory": "cron-jobs",
+                "directory": "server-cron",
                 "content-type": "text/html",
                 "public": "true"
             }

@@ -312,7 +312,7 @@ function getNextExecutionTime(schedule) {
         return currentDateTime.toISOString();
     }
 
-    console.warn('[@cocreate/cron-jobs] Max safety iteration reached for schedule:', schedule);
+    console.warn('[@cocreate/server-cron] Max safety iteration reached for schedule:', schedule);
     return null;
 }
 
@@ -334,7 +334,7 @@ async function updateCronJob(object) {
                 upsert: true,
                 organization_id: job.organization_id
             });
-            console.log(`[@cocreate/cron-jobs] Cron job ${job._id} for org ${job.organization_id} updated.`);
+            console.log(`[@cocreate/server-cron] Cron job ${job._id} for org ${job.organization_id} updated.`);
         }
 
         if (cronJobs[0].organization_id) {
@@ -348,10 +348,10 @@ async function updateCronJob(object) {
                 },
                 organization_id: process.env.organization_id
             });
-            console.log(`[@cocreate/cron-jobs] Cron job list for org ${firstJob.organization_id} mapped.`);
+            console.log(`[@cocreate/server-cron] Cron job list for org ${firstJob.organization_id} mapped.`);
         }
     } catch (error) {
-        console.error('[@cocreate/cron-jobs] Error updating cron job records:', error);
+        console.error('[@cocreate/server-cron] Error updating cron job records:', error);
     }
 }
 
@@ -359,7 +359,7 @@ async function updateCronJob(object) {
  * Triggers the defined job action or payload webhook.
  */
 async function triggerJobAction(job) {
-    console.log(`[@cocreate/cron-jobs] Triggering pipeline action for job ${job._id}`);
+    console.log(`[@cocreate/server-cron] Triggering pipeline action for job ${job._id}`);
 
     try {
         if (server?.lazyloader?.webhook) {
@@ -371,7 +371,7 @@ async function triggerJobAction(job) {
             });
         }
     } catch (err) {
-        console.error(`[@cocreate/cron-jobs] Action execution failed for job ${job._id}:`, err);
+        console.error(`[@cocreate/server-cron] Action execution failed for job ${job._id}:`, err);
     }
 }
 
@@ -380,7 +380,7 @@ async function triggerJobAction(job) {
  * @param {Object} object - The cron-job object containing job details, schedule parameters, etc.
  */
 async function executeCronJob(object) {
-    console.log(`[@cocreate/cron-jobs] Executing cron job ${object._id} for org ${object.organization_id}`);
+    console.log(`[@cocreate/server-cron] Executing cron job ${object._id} for org ${object.organization_id}`);
 
     if (scheduledJobs[object._id]) {
         delete scheduledJobs[object._id];
@@ -415,7 +415,7 @@ async function executeCronJob(object) {
 
         await updateCronJob(object);
     } catch (error) {
-        console.error(`[@cocreate/cron-jobs] Error executing cron job ${object._id}:`, error);
+        console.error(`[@cocreate/server-cron] Error executing cron job ${object._id}:`, error);
     }
 }
 
@@ -438,7 +438,7 @@ function scheduleCronJob(object) {
         return;
     }
 
-    console.log(`[@cocreate/cron-jobs] Scheduling job ${object._id} for org ${object.organization_id} in ${(delay / 1000).toFixed(1)} seconds`);
+    console.log(`[@cocreate/server-cron] Scheduling job ${object._id} for org ${object.organization_id} in ${(delay / 1000).toFixed(1)} seconds`);
 
     const scheduledObj = { ...object };
 
@@ -506,7 +506,7 @@ async function handleCrudEvent(data) {
  */
 async function pollForCronJobs() {
     if (!crud) return;
-    console.log(`[@cocreate/cron-jobs] [WORKER ${server?.workerId ?? 'standalone'}] Polling for active organizations' cron jobs...`);
+    console.log(`[@cocreate/server-cron] [WORKER ${server?.workerId ?? 'standalone'}] Polling for active organizations' cron jobs...`);
 
     const now = new Date();
     const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
@@ -566,7 +566,7 @@ async function pollForCronJobs() {
             }
         }
     } catch (error) {
-        console.error('[@cocreate/cron-jobs] Error polling for cron jobs:', error);
+        console.error('[@cocreate/server-cron] Error polling for cron jobs:', error);
     }
 }
 
@@ -575,7 +575,7 @@ async function pollForCronJobs() {
  */
 async function addToPlatformDB(organization_id, datetime) {
     if (!crud) return;
-    console.log(`[@cocreate/cron-jobs] Adding cron job reference to platform DB for org ${organization_id}`);
+    console.log(`[@cocreate/server-cron] Adding cron job reference to platform DB for org ${organization_id}`);
 
     try {
         await crud.send({
@@ -584,9 +584,9 @@ async function addToPlatformDB(organization_id, datetime) {
             object: { _id: organization_id, nextCron: datetime },
             organization_id: process.env.organization_id
         });
-        console.log(`[@cocreate/cron-jobs] Platform DB updated for org ${organization_id}`);
+        console.log(`[@cocreate/server-cron] Platform DB updated for org ${organization_id}`);
     } catch (error) {
-        console.error(`[@cocreate/cron-jobs] Error updating platform DB for org ${organization_id}:`, error);
+        console.error(`[@cocreate/server-cron] Error updating platform DB for org ${organization_id}:`, error);
     }
 }
 
@@ -595,7 +595,7 @@ async function addToPlatformDB(organization_id, datetime) {
  */
 async function findNextCronJob(organization_id) {
     if (!crud) return;
-    console.log(`[@cocreate/cron-jobs] Finding next cron job for org ${organization_id}`);
+    console.log(`[@cocreate/server-cron] Finding next cron job for org ${organization_id}`);
 
     try {
         const nextJob = await crud.send({
@@ -614,7 +614,7 @@ async function findNextCronJob(organization_id) {
             scheduleCronJob({ ...nextJob.object[0], nextExecutionTime: datetime });
         }
     } catch (error) {
-        console.error(`[@cocreate/cron-jobs] Error finding next cron job for org ${organization_id}:`, error);
+        console.error(`[@cocreate/server-cron] Error finding next cron job for org ${organization_id}:`, error);
     }
 }
 

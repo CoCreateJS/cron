@@ -1,4 +1,4 @@
-# @cocreate/cron-jobs
+# @cocreate/server-cron
 
 A high-performance, multi-tenant, zero-dependency background cron engine and task scheduler built for distributed cluster orchestration and automated event execution across the CoCreate ecosystem.
 
@@ -6,9 +6,9 @@ A high-performance, multi-tenant, zero-dependency background cron engine and tas
 
 ## Documentation
 
-For complete API references, deployment guides, scheduling examples, and architecture documentation, visit the CoCreate Cron Jobs documentation:
+For complete API references, deployment guides, scheduling examples, and architecture documentation, visit the CoCreate Server Cron documentation:
 
-https://cocreatejs.com/docs/cron-jobs
+https://cocreatejs.com/docs/server-cron
 
 ---
 
@@ -38,7 +38,7 @@ https://cocreatejs.com/docs/cron-jobs
 
 # Overview
 
-`@cocreate/cron-jobs` delivers an enterprise-grade background scheduling engine for `@cocreate/server`.
+`@cocreate/server-cron` delivers an enterprise-grade background scheduling engine for `@cocreate/server`.
 
 It supports both traditional 5-part Unix cron expressions and rich JSON schedule objects with advanced scheduling capabilities including time zones, skip dates, end-of-month execution, date ranges, and human-readable scheduling.
 
@@ -106,13 +106,13 @@ Scheduled Completed
 ## NPM
 
 ```bash
-npm install @cocreate/cron-jobs
+npm install @cocreate/server-cron
 ```
 
 ## Yarn
 
 ```bash
-yarn add @cocreate/cron-jobs
+yarn add @cocreate/server-cron
 ```
 
 > **Note**
@@ -126,7 +126,7 @@ yarn add @cocreate/cron-jobs
 ## Calculate the Next Execution Time
 
 ```javascript
-import cronJobs from "@cocreate/cron-jobs";
+import cronJobs from "@cocreate/server-cron";
 
 const nextRun = cronJobs.getNextExecutionTime({
 	cronExpression: "0 8 * * 1-5",
@@ -260,7 +260,7 @@ If a worker exits before execution completes, polling automatically detects stal
 Calculates the next execution time.
 
 ```javascript
-import cronJobs from "@cocreate/cron-jobs";
+import cronJobs from "@cocreate/server-cron";
 
 const next = cronJobs.getNextExecutionTime({
 	cronExpression: "0 0 * * *"
@@ -320,7 +320,7 @@ process.emit("crud-event", {
 
 # Database Integration & CRUD Events
 
-`@cocreate/cron-jobs` automatically listens for platform CRUD events using:
+`@cocreate/server-cron` automatically listens for platform CRUD events using:
 
 ```javascript
 process.on("crud-event");
@@ -353,7 +353,7 @@ Organization updates also synchronize job summaries into the parent `organizatio
 
 Release notes, performance improvements, scheduling enhancements, and compatibility updates are available on the GitHub Releases page:
 
-https://github.com/CoCreate-app/CoCreate-cron-jobs/releases
+https://github.com/CoCreate-app/CoCreate-server-cron/releases
 
 ---
 
@@ -375,21 +375,21 @@ We welcome bug reports, feature requests, documentation improvements, and pull r
 
 Please review the contributing guide before submitting changes:
 
-- **Contributing Guide:** https://github.com/CoCreate-app/CoCreate-cron-jobs/blob/master/CONTRIBUTING.md
-- **Issue Tracker:** https://github.com/CoCreate-app/CoCreate-cron-jobs/issues
-- **Discussions:** https://github.com/CoCreate-app/CoCreate-cron-jobs/discussions
+- **Contributing Guide:** https://github.com/CoCreate-app/CoCreate-server-cron/blob/master/CONTRIBUTING.md
+- **Issue Tracker:** https://github.com/CoCreate-app/CoCreate-server-cron/issues
+- **Discussions:** https://github.com/CoCreate-app/CoCreate-server-cron/discussions
 
 ---
 
 # About
 
-`@cocreate/cron-jobs` is designed, built, and maintained by the CoCreate Developer Experience Team.
+`@cocreate/server-cron` is designed, built, and maintained by the CoCreate Developer Experience Team.
 
 It provides the distributed scheduling and recurring task execution backbone for the CoCreate platform.
 
 Learn more:
 
-- Documentation: https://cocreatejs.com/docs/cron-jobs
+- Documentation: https://cocreatejs.com/docs/server-cron
 - Website: https://cocreatejs.com
 
 ---
