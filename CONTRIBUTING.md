@@ -13,7 +13,7 @@ Fork the [project on Github](https://github.com/CoCreate-app/CoCreate-cron-jobs)
 ```
 git clone https://github.com/contributor/CoCreate-cron-jobs.git
 cd CoCreate-cron-jobs
-git remote add upstream https://gitlab.com/cocreatejs/CoCreate-cron-jobs.git
+git remote add upstream https://github.com/cocreatejs/CoCreate-cron-jobs.git
 ```
 
 ## Create a Topic Branch
