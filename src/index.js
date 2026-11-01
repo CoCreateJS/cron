@@ -29,6 +29,8 @@ const scheduledJobs = {};
 
 /**
  * Safe helper to retrieve localized or UTC date part names natively.
+ * @private
+ * @environment server
  */
 function getFormattedDatePart(date, type, timezone = 'UTC') {
     return date.toLocaleString('en-US', { [type]: 'long', timeZone: timezone });
@@ -36,6 +38,8 @@ function getFormattedDatePart(date, type, timezone = 'UTC') {
 
 /**
  * Calculates the last day of the month for any given UTC year/month.
+ * @private
+ * @environment server
  */
 function getLastDayOfMonthUTC(year, monthIndex) {
     // Setting day to 0 of monthIndex + 1 yields the last day of monthIndex
@@ -45,6 +49,8 @@ function getLastDayOfMonthUTC(year, monthIndex) {
 /**
  * Custom 5-Part Cron Field Parser (Zero external dependencies).
  * Handles ranges (1-5), lists (1,2,3), wildcards (*), step values (* /15, 1-30/5), and string aliases.
+ * @private
+ * @environment server
  */
 function parseCronField(field, min, max, nameMap = {}) {
     field = field.trim().toUpperCase();
@@ -95,6 +101,8 @@ function parseCronField(field, min, max, nameMap = {}) {
 
 /**
  * Tokenizes standard 5-part cron expressions into match sets.
+ * @private
+ * @environment server
  */
 function parseCronExpression(expression) {
     if (!expression || typeof expression !== 'string') return null;
@@ -115,6 +123,8 @@ function parseCronExpression(expression) {
 
 /**
  * Checks if a specific UTC date instance matches a parsed 5-part cron object.
+ * @private
+ * @environment server
  */
 function matchesCron(parsedCron, date) {
     const month = date.getUTCMonth() + 1; // 1-12
@@ -145,6 +155,8 @@ function matchesCron(parsedCron, date) {
 
 /**
  * Calculates the next execution time for standard 5-part cron strings natively.
+ * @private
+ * @environment server
  */
 function getNextCronExecution(cronExpression, startFromDate, skipDates = []) {
     const parsed = parseCronExpression(cronExpression);
@@ -208,6 +220,8 @@ function getNextCronExecution(cronExpression, startFromDate, skipDates = []) {
  * Supports cronExpression, startTime, skipDates, time, daysOfWeek, daysOfMonth, endOfMonth, months, endTime, etc.
  * @param {Object} schedule - The schedule object containing custom fields or cronExpression.
  * @returns {string|null} nextExecutionTime - Calculated ISO timestamp in UTC, or null if endTime has passed.
+ * @public
+ * @environment server
  */
 function getNextExecutionTime(schedule) {
     if (!schedule) return null;
@@ -319,6 +333,8 @@ function getNextExecutionTime(schedule) {
 /**
  * Marks the cron job status inside the platform database.
  * Normalizes input array payloads to preserve safety across organization contexts.
+ * @private
+ * @environment server
  */
 async function updateCronJob(object) {
     if (!crud) return;
@@ -357,6 +373,8 @@ async function updateCronJob(object) {
 
 /**
  * Triggers the defined job action or payload webhook.
+ * @private
+ * @environment server
  */
 async function triggerJobAction(job) {
     console.log(`[@cocreate/server-cron] Triggering pipeline action for job ${job._id}`);
@@ -378,6 +396,8 @@ async function triggerJobAction(job) {
 /**
  * Executes the scheduled cron job.
  * @param {Object} object - The cron-job object containing job details, schedule parameters, etc.
+ * @public
+ * @environment server
  */
 async function executeCronJob(object) {
     console.log(`[@cocreate/server-cron] Executing cron job ${object._id} for org ${object.organization_id}`);
@@ -422,6 +442,8 @@ async function executeCronJob(object) {
 /**
  * Schedules a cron job in-memory to be executed at a specific UTC datetime.
  * @param {Object} object - The cron-job configuration footprint.
+ * @public
+ * @environment server
  */
 function scheduleCronJob(object) {
     if (!object || !object._id || !object.nextExecutionTime) return;
@@ -450,6 +472,8 @@ function scheduleCronJob(object) {
 /**
  * Handles CRUD events to schedule cron jobs dynamically without array mutation bugs.
  * @param {Object} data - The data object emitted from CRUD operations.
+ * @public
+ * @environment server
  */
 async function handleCrudEvent(data) {
     if (!data || data.array !== 'cron-job' || !Array.isArray(data.object)) {
@@ -503,6 +527,8 @@ async function handleCrudEvent(data) {
 
 /**
  * Polls the platform DB for cron jobs that are scheduled or potentially failed.
+ * @public
+ * @environment server
  */
 async function pollForCronJobs() {
     if (!crud) return;
@@ -572,6 +598,8 @@ async function pollForCronJobs() {
 
 /**
  * Adds a cron job reference to the platform database.
+ * @public
+ * @environment server
  */
 async function addToPlatformDB(organization_id, datetime) {
     if (!crud) return;
@@ -592,6 +620,8 @@ async function addToPlatformDB(organization_id, datetime) {
 
 /**
  * Finds and schedules the next cron job for the organization after one is executed.
+ * @public
+ * @environment server
  */
 async function findNextCronJob(organization_id) {
     if (!crud) return;
@@ -620,6 +650,8 @@ async function findNextCronJob(organization_id) {
 
 /**
  * Self-Activating Auto-Initialization Loop.
+ * @public
+ * @environment server
  */
 async function init() {
     if (server && server.isInitialized && server.crud && server.wsManager) {
@@ -653,3 +685,10 @@ export default {
     addToPlatformDB,
     findNextCronJob
 };
+
+/**
+ * A distributed server-side cron scheduler and orchestrator for CoCreate Server.
+ *
+ * @module server-cron
+ * @environment server
+ */

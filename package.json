@@ -19,28 +19,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "cocreate": {
-    "environment": [
-      "server"
-    ],
-    "interface": {
-      "schemaVersion": 1,
-      "summary": "A distributed server-side cron scheduler and orchestrator for CoCreate Server.",
-      "source": "src/index.js",
-      "api": {
-        "exports": [
-          "addToPlatformDB",
-          "executeCronJob",
-          "findNextCronJob",
-          "getNextExecutionTime",
-          "handleCrudEvent",
-          "init",
-          "pollForCronJobs",
-          "scheduleCronJob"
-        ]
-      }
-    }
-  },
   "scripts": {
     "start": "webpack --config webpack.config.js",
     "build": "webpack --mode=production --config webpack.config.js",
