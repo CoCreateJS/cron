@@ -1,3 +1,34 @@
+# [2.0.0](https://github.com/CoCreateJS/cron/compare/v1.4.3...v2.0.0) (2026-11-02)
+
+
+* refactor!: rename cron scheduler to server cron ([7b4439e](https://github.com/CoCreateJS/cron/commit/7b4439e6415c9ce3d70971ec090ba4d32af3005c))
+
+
+### Bug Fixes
+
+* add Deno specific entries to .gitignore ([510f8f5](https://github.com/CoCreateJS/cron/commit/510f8f53c20587c0813ba210f5c95ac243c713ea))
+* add dependencies section to package.json ([e0898eb](https://github.com/CoCreateJS/cron/commit/e0898eb457c10c81dd766d9e04f9b8bb34ceb510))
+* bump [@cocreate](https://github.com/cocreate) dependencies ([1a2afe6](https://github.com/CoCreateJS/cron/commit/1a2afe6fa6864be75133ae72dc0dcdb9cd1070ff))
+* bump versions ([52cf171](https://github.com/CoCreateJS/cron/commit/52cf17162392fe618d8b0476fd44a2dd0a87263f))
+* bump versions ([bf9063a](https://github.com/CoCreateJS/cron/commit/bf9063a425541e909251bba896d368df9a1dcd7b))
+* instance renamed to vm ([697f996](https://github.com/CoCreateJS/cron/commit/697f99667195a4c7289dce5ed835f6f3f5e379d4))
+* remove trailing slash from node_modules entry in .gitignore ([211a236](https://github.com/CoCreateJS/cron/commit/211a236fab418184f65ee9b55094ce56c2ed5e04))
+* replace legacy $filter field with filter ([6a8e8c4](https://github.com/CoCreateJS/cron/commit/6a8e8c434c8e5f7b6506e30588e009fb98f573bd))
+* update git url ([4da0aea](https://github.com/CoCreateJS/cron/commit/4da0aea8d8c7b8b282ab06fd813ceeea79ad9ff4))
+* update GitHub Actions to use latest versions and sync package.json description ([d5b7285](https://github.com/CoCreateJS/cron/commit/d5b72859a462394bd5cf923a2a7aadaefc6d3c41))
+* update log message format for consistency ([aa1b52a](https://github.com/CoCreateJS/cron/commit/aa1b52a5c96692c5606c2f3f9631569e2082a7ff))
+
+
+### Features
+
+* bump all dependencies ([b051fbb](https://github.com/CoCreateJS/cron/commit/b051fbb48dd515dbe1b23aa45fa0517006c1ab29))
+* overhaul cron job scheduling engine with native parsing and enhanced features ([1a03dca](https://github.com/CoCreateJS/cron/commit/1a03dcaa6d983539e835a5afa94aa3dbae49d78c))
+
+
+### BREAKING CHANGES
+
+* Rename the package to @cocreate/server-cron and update repository and documentation identifiers.
+
 ## [1.4.3](https://github.com/CoCreateJS/cron-jobs/compare/v1.4.2...v1.4.3) (2026-07-19)
 
 
