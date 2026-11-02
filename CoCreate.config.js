@@ -8,14 +8,14 @@ module.exports = {
             "object": {
                 "_id": "60145dc49f64ba1680b86693",
                 "name": "index.html",
-                "path": "/docs/server-cron",
-                "pathname": "/docs/server-cron/index.html",
+                "path": "/docs/cron",
+                "pathname": "/docs/cron/index.html",
                 "src": "{{./docs/index.html}}",
                 "host": [
                     "CoCreateJS.com",
                     "general.CoCreateJS.com"
                 ],
-                "directory": "server-cron",
+                "directory": "cron",
                 "content-type": "text/html",
                 "public": "true"
             }
