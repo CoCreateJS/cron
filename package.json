@@ -41,6 +41,6 @@
   "type": "module",
   "main": "./src/index.js",
   "dependencies": {
-    "@cocreate/cluster": "^2.0.0"
+    "@cocreate/cluster": "^3.0.0"
   }
 }
