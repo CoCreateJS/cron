@@ -1,6 +1,6 @@
 {
   "name": "@cocreate/cron",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A distributed server-side cron scheduler and orchestrator for CoCreate Server.",
   "keywords": [
     "cron",
