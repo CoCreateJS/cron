@@ -24,7 +24,7 @@
 import server from '@cocreate/cluster';
 
 let crud = null;
-let wsManager = null;
+let socket = null;
 const scheduledJobs = {};
 
 /**
@@ -382,8 +382,8 @@ async function triggerJobAction(job) {
     try {
         if (server?.lazyloader?.webhook) {
             await server.lazyloader.webhook(job);
-        } else if (wsManager && job.action) {
-            await wsManager.broadcast({
+        } else if (socket && job.action) {
+            await socket.send({
                 target: job.action,
                 data: job
             });
@@ -654,9 +654,9 @@ async function findNextCronJob(organization_id) {
  * @environment server
  */
 async function init() {
-    if (server && server.isInitialized && server.crud && server.wsManager) {
+    if (server && server.isInitialized && server.crud && server.socket) {
         crud = server.crud;
-        wsManager = server.wsManager;
+        socket = server.socket;
 
         process.on('crud-event', (event) => {
             handleCrudEvent(event);
